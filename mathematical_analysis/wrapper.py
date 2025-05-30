@@ -13,7 +13,7 @@ EQ2 = Eq(Tc1*Rb1*(1-fopt), Tc2*Rb2*fopt)
 EQ3 = Eq((Tt1-Tc1)*Kch, Tc1*Rb1*Ksp)
 EQ4 = Eq((Tt2-Tc2)*Kch, Tc2*Rb2*Ksp)
 
-def param_sweep(fixed_params, 
+def solve_numeric(fixed_params, 
                 target, 
                 vals, 
                 name="param",
@@ -26,7 +26,6 @@ def param_sweep(fixed_params,
     # vals: values for the target parameter
     # name: name to use for the target parameter
     # time: corresponds to seconds of simulation time
-    
     
     fopts = [x/100 for x in range(0, 101)]
     df = None
@@ -79,6 +78,7 @@ def param_sweep(fixed_params,
 
 
 if __name__ == "__main__":
+    # test that the module is working correctly
     fixed_params = {N: 100, Kbd: 0.005, Rt: 500, Tt1: 1250, Tt2: 1250, Ksp: 0.05,L: 300}
     vals = [100]
     df = param_sweep(fixed_params, Kch, vals, name="kch")

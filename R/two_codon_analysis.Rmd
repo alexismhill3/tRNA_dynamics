@@ -1,0 +1,263 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+two_codon_numeric <- read_csv("df_05_055_07_09.csv")
+```
+
+```{r}
+vlines <- data.frame(trna_prop = c(0.5, 0.7, 0.9), val = c(0.5, 0.7, 0.9))
+facet_labels <- c(`0.5` = "Fraction of preferred\ntRNAs = 0.5", `0.7` = "Fraction of preferred\ntRNAs = 0.7", `0.9` = "Fraction of preferred\ntRNAs = 0.9")
+
+p1 <- ggplot(data=two_codon_numeric%>%filter(trna_prop != 0.55),
+       aes(x=fopt, y=protein_expr_rate, group = kch, colour = as.factor(kch))) +
+  geom_line(linewidth=1.5) +
+  facet_wrap(~trna_prop, labeller = as_labeller(facet_labels)) +
+  scale_color_manual(values=c('#ffd4ac', '#b63441', '#1f1e1e', '#3f69c9', '#bde7db'),
+                     name=expression(k[charge])) +
+  scale_x_continuous(name=expression(f[op]),
+                     #breaks = c(0, 0.25, 0.5, 0.75, 1),
+                     breaks = c(0, 0.5, 1),
+                     #labels = c("0", "0.25", "0.5", "0.75", "1")
+                     labels = c("0", "0.5", "1")) +
+  scale_y_continuous(name="Protein expression") +
+  geom_vline(data=vlines, aes(xintercept=val), alpha=0.3, linewidth=0.5) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        panel.grid = element_blank()) +
+  guides(color = guide_legend(reverse = TRUE))
+
+p1
+```
+
+```{r}
+fop_max <- read_csv("fop_max_15_points.csv") 
+```
+
+```{r}
+colors <- c('#56c88f', '#2ea8a0', '#12809b', '#105693')
+colors <- sequential_hcl(5, "grays", rev = TRUE)[2:5]
+
+p2 <- fop_max %>%
+  filter(kch > 0.1, ratio < 0.99, fopt > 0) %>%
+  arrange(desc(ratio)) %>%
+  ggplot(aes(x=kch, y=fopt, color=as.factor(ratio))) +
+  geom_hline(aes(yintercept=0.5), linewidth=0.8, color=colors[1], alpha=0.6) +
+  geom_hline(aes(yintercept=0.55), linewidth=0.8, color=colors[1], alpha=0.6) +
+  geom_hline(aes(yintercept=0.7), linewidth=0.8, color=colors[1], alpha=0.6) +
+  geom_hline(aes(yintercept=0.9), linewidth=0.8, color=colors[1], alpha=0.6) +
+  geom_line(linewidth=1) +
+  geom_point(size=3, aes(fill=as.factor(ratio)), color="white", shape=21) +
+  scale_x_continuous(trans = "log10",
+                     name=expression(k[charge])) +
+  scale_y_continuous(name=expression(f[op]^{max})) +
+  scale_color_manual(values=colors, name="Fraction of\npref. tRNAs") +
+  scale_fill_manual(values=colors, guide="none") +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        panel.grid = element_blank()) +
+  guides(color = guide_legend(reverse = TRUE))
+
+p2
+```
+
+```{r}
+cowplot::plot_grid(p1, p2, nrow = 2, align = "v", axis="lr", labels=c("A", "B"))
+ggsave("fig/numeric_protein_expresion.pdf", width = 6, height = 4.5)
+```
+
+```{r}
+trna_ss_07 <- two_codon_numeric %>% filter(trna_prop == 0.7) %>%
+  select(c("fopt", "kch", "tc1", "tc2")) %>%
+  pivot_longer(cols = c("tc1", "tc2"), names_to = "species")
+
+labels <- c("tc1" = "Preferred tRNA", "tc2" = "Non-preferred tRNA")
+
+trna_plot <- trna_ss_07 %>%
+  ggplot(aes(x=fopt, y=value, group=kch, color=as.factor(kch))) +
+  facet_wrap(~species, labeller = as_labeller(labels)) +
+  geom_line(linewidth=1.5) +
+  scale_color_manual(values=c('#ffd4ac', '#b63441', '#1f1e1e', '#3f69c9', '#bde7db'),
+                     name=expression(k[charge])) +
+  scale_x_continuous(name=expression(f[op]),
+                     breaks = c(0, 0.25, 0.5, 0.75, 1),
+                     labels = c("0", "0.25", "0.5", "0.75", "1")) +
+  scale_y_continuous(name="Amount charged",
+                     limits=c(0, 1750)) +
+  #geom_hline(yintercept=1750, alpha=0.3, linewidth=0.5) +
+  guides(color = guide_legend(reverse = TRUE)) +
+  theme_bw() +
+  theme(text = element_text(size=12))
+
+#legend <- get_legend(p3)
+trna_plot
+ggsave("fig/numeric_charged_trna.pdf", width=7, height=3)
+```
+
+```{r}
+tc_deltas <- read_csv("df_07_tc_deltas.csv")
+```
+
+```{r}
+require(graphics)
+
+vlines <- data.frame(kch = c(3, 10, 30), val = c(0.72, 0.79, 0.96))
+#facet_labels <- c(`0.5` = "tRNA ratio = 0.5", `0.7` = "tRNA ratio = 0.7")
+
+p5 <- ggplot(tc_deltas%>%filter(kch <= 30), aes(x=fopt, y=delta, color = species)) +
+  geom_line(linewidth=1) +
+  facet_wrap(~kch, labeller = label_bquote(K[charge] == .(kch))) +
+  #scale_linetype_discrete(labels = c(expression(T[c1]), expression(T[c2]))) +
+  scale_color_manual(labels = c(expression(T[c1]), expression(T[c2])),
+                     values = c("#000000", "#26b1e8")) +
+  scale_x_continuous(name=expression(f[op]),
+                     breaks = c(0, 0.25, 0.5, 0.75, 1),
+                     labels = c("0", "0.25", "0.5", "0.75", "1")) +
+  scale_y_continuous(name=expression(paste(Delta," ",T[c]," / ",Delta," ",f[op]))) +
+  geom_vline(data=vlines, aes(xintercept = val), alpha=0.5, linewidth=0.5) +
+  theme_bw() +
+  theme(text = element_text(size = 12))
+
+p5
+#ggsave("fig/deltas_temp.png", width = 8, height = 4)
+```
+
+```{r}
+#cowplot::plot_grid(top, p5, ncol = 1, labels = c("", "C"))
+#ggsave("fig/tc_deltas.pdf", width = 6, height = 4)
+```
+
+Parameter scaling analysis
+
+```{r}
+trna_scaling <- read_csv("parameter_scaling_trna_kspeed.csv")
+ribo_scaling <- read_csv("parameter_scaling_ribosome_kbing.csv")
+```
+
+```{r}
+p_scale_trna <- trna_scaling %>%
+  mutate(total_trna = Tt1 + Tt2) %>%
+  ggplot() +
+  #geom_point(size=3) +
+  geom_jitter(position = position_jitter(width = 0, height = 2), 
+              aes(x=fopt, 
+                  y=protein_expr_rate, 
+                  colour=as.factor(kspeed_factor), 
+                  shape=as.factor(total_trna)),
+              size=3, 
+              alpha=0.6) +
+  scale_color_manual(values = c("#0090C1", "#40476D", "#FCAB10"),
+                     name=expression(K[speed]*" multiplier")) +
+  scale_shape_discrete(name="total tRNA",
+                       guide = guide_legend(order = 1),
+                       solid = TRUE) +
+  scale_x_continuous(name=expression(f[op])) +
+  scale_y_continuous(name="protein expression") +
+  guides(color = guide_legend(reverse = TRUE)) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        #legend.position = c(0.12,0.65),
+        #legend.background = element_rect(fill=alpha("white", 0.5)),
+        #legend.box.background = element_rect(color="grey", fill=alpha("white", 0.5)),
+        #legend.box.margin = unit(c(0.1,0.1,0.1,0.1), "cm")
+        )
+
+p_scale_trna        
+```
+
+```{r}
+library("ggstance")
+#palette <- c("#df68a9", "#3aaff2", "#D55E00")
+#palette = c("#f47125", '#262322', "#3381e6")
+#palette <- c( "#0072B2", "#D55E00", "#009E73")
+palette <- c("#0090C1", "#40476D", "#FCAB10" )
+
+
+p_scale_trna <- trna_scaling %>%
+  filter(kspeed_factor == 10) %>%
+  filter(fopt > 0.1) %>%
+  mutate(total_trna = Tt1 + Tt2) %>%
+  ggplot(aes(x=fopt, y=protein_expr_rate, color=as.factor(total_trna))) +
+  #geom_jitter(position = position_jitter(width = 0.00625, height = 1), 
+  #            size=3, 
+  #            alpha=0.85) +
+  geom_point(size=3, position=position_dodge(width=0.02), size=3, alpha=0.85) +
+  scale_color_manual(values = palette, name=expression("Total tRNA")) +
+  #scale_shape_discrete(name="total tRNA",
+  #                     guide = guide_legend(order = 1),
+  #                     solid = TRUE) +
+  scale_x_continuous(name=expression(f[op])) +
+  scale_y_continuous(name="Protein expression rate") +
+  guides(color = guide_legend(reverse = FALSE)) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        legend.position = "bottom"
+        )
+
+p_scale_trna 
+ggsave("fig/numeric_data_collapse.pdf", width = 6, height = 4)
+```
+Verify that numeric solutions are consistent with simulation
+
+```{r}
+# dateframe contains simulated data and numeric solutions for an identical system
+df_verify = read_csv("verify_numeric.csv")
+```
+
+```{r}
+ggplot() +
+  geom_line(data=df_verify%>%filter(type=="numeric", fopt>0.1), 
+            aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), linewidth=1.5, alpha=0.8) +
+  geom_point(data=df_verify%>%filter(type=="simulation", fopt>0.1), 
+             aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), size=2) +
+  scale_x_continuous(name=expression(f[op])) +
+  scale_y_continuous(name="Protein expression rate") +
+  scale_color_discrete_sequential(palette="Blues3", nmax=5, order=2:5, name=expression(k[charge])) +
+  #geom_vline(data=vlines, aes(xintercept=val), alpha=0.3, linewidth=0.5) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        panel.grid = element_blank()) +
+  guides(color = guide_legend(reverse = TRUE))
+ggsave("fig/verify_numeric.pdf", width = 6, height = 4)
+```
+
+```{r}
+df_verify_ss = read_csv("verify_numeric_sim_ss.csv")
+```
+
+```{r}
+df_verify_ss <- df_verify_ss %>%
+  pivot_wider(id_cols = c("fopt", "kch"), names_from = "time", values_from = "protein", names_prefix = "time") %>%
+  mutate("protein_expr_rate" = (time200 - time100) / 100)
+```
+
+```{r}
+fops <- seq(1, 100, 4) / 100
+
+ggplot() +
+  geom_line(data=df_verify%>%filter(type=="numeric", fopt>0.0), 
+            aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), linewidth=1.5, alpha=0.8) +
+  geom_point(data=df_verify_ss%>%filter(fopt %in% fops), 
+             aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), size=2.5) +
+  scale_x_continuous(name=expression(f[op])) +
+  scale_y_continuous(name="Protein expression rate") +
+  scale_color_discrete_sequential(palette="Blues3", nmax=5, order=2:5, name=expression(k[charge])) +
+  #geom_vline(data=vlines, aes(xintercept=val), alpha=0.3, linewidth=0.5) +
+  theme_bw() +
+  theme(text = element_text(size = 12),
+        panel.grid = element_blank()) +
+  guides(color = guide_legend(reverse = TRUE))
+ggsave("fig/verify_numeric_ss.pdf", width = 6, height = 4)
+```
+
+
