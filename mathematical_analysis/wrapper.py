@@ -18,7 +18,9 @@ def solve_numeric(fixed_params,
                 vals, 
                 name="param",
                 time=100,
-                verbose=True):
+                verbose=True,
+                solver="mnewton",
+                guess=(15,15,15,15)):
     
     # Solve numerically for Rb1, Tc1, Rb2, and Tc2 using an mnewton solver.
     # fix_params: model parameters with fixed values
@@ -44,10 +46,10 @@ def solve_numeric(fixed_params,
             Eq4 = EQ4.evalf(subs=cp)
             try:
                 solution = nsolve([Eq1, Eq2, Eq3, Eq4], 
-                                  [Rb1, Rb2, Tc1, Tc2], 
-                                  (15, 15, 15, 15), 
+                                  [Rb1, Rb2, Tc1, Tc2],
+                                  guess,
                                   dict=True, 
-                                  solver="mnewton")
+                                  solver=solver)
                 solutions.append(solution)
                 xvals.append(f)
             except Exception:
