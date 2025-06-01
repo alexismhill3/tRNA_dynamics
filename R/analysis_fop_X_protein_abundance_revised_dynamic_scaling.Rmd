@@ -1,0 +1,159 @@
+---
+title: "Fraction of Optimal Codons x Protein Abundance - Parameter Scaling"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+library(tidyverse)
+library(ggplot2)
+library(gtools)
+library(stringr)
+library(cowplot)
+library(readxl)
+SAVE_FIGS <- TRUE
+
+cbPalette <- c("#CC79A7", "#56B4E9", "#E69F00", "#F0E442", "#0072B2", "#D55E00", "#009E73", "#999999")
+
+# These are genes that are not included in the simulation and should be removed before comparing
+# simulations with experimental data
+IGNORE_GENES <- c("gene 10B",
+                "possible gene 5.5-5.7",
+                "gene 1.5",
+                "gene 1.6",
+                "gene 4.1",
+                "gene 4B",
+                "gene 0.6A",
+                "gene 0.6B",
+                "possible gene 0.6B",
+                "gene 0.5",
+                "gene 0.4")
+```
+
+```{r}
+labels <- read_csv("id_map.csv") %>% filter(!is.na(gene_number))
+load_sim <- function(paths) {
+  data_list <- lapply(paths, function(path) {   # loop through each file path in paths
+    read_tsv(path) %>%   # read the tsv file at the given path
+      mutate(file = path) %>%   # add column 'file' for file path
+      group_by(time) %>%   # group by time
+      nest() %>%   # convert each group in a nested data frame of 2 columns: time and data (all the rows for that time point)
+      mutate(data = purrr::map(data, ~full_join(labels, ., by = c("pinetree" = "species")))) %>%   # join with the labels data frame
+      unnest(cols = c(data)) %>%   # expand the nested data back into a flat data frame
+      mutate(time = round(time)) %>%   # round the time column
+      mutate(protein = if_else(is.na(protein), 0, protein),   # replace missing protein and transcript values with 0
+             transcript = if_else(is.na(transcript), 0, as.numeric(transcript))) %>%
+      filter(!(pinetree %in% IGNORE_GENES), !is.na(gene_number))   # filter out unwanted genes
+  })
+  bind_rows(data_list)   # combine data frames in data_list into a single data frame
+}
+```
+
+```{r}
+max_time <- 1000
+gene_name <- "10A"
+fops <- seq(0, 1.0, by = 0.1)
+
+# Function to process data for a given charge and ribo_speed with 1 decimal place
+process_dynamic_data_1decimal <- function(charge_val, ribo_speed, trna_count, pref_val) {
+  dynamic_output_dir <- sprintf("../data/simulation/phage/revised_dynamic_pref%.1f_charge%.1f_ribospeed%.1f", pref_val, charge_val, ribo_speed)
+  
+  # Generate file paths
+  seeds <- 1:3
+  file_paths <- expand.grid(seed = seeds, fop = fops, pref_val = pref_val, ribo_speed = ribo_speed, trna_count = trna_count) %>%
+    mutate(output_dir = dynamic_output_dir) %>%
+    mutate(file_name = sprintf("trna_phage_pref%.1f_%d_fop%.1f_ribospeed%.1f_trna%d.tsv", pref_val, seed, fop, ribo_speed, trna_count)) %>%
+    mutate(full_path = file.path(output_dir, file_name))
+  
+  # Load all simulations
+  dynamic_data <- load_sim(file_paths$full_path)
+  
+  # Add fop and trna_count columns and filter to include only the specified gene and max time
+  dynamic_data <- dynamic_data %>%
+    mutate(
+      fop = as.numeric(str_extract(file, "(?<=fop)[0-9]+\\.[0-9]")),
+      trna_count = trna_count
+    ) %>%
+    filter(time == max_time, str_detect(pinetree, paste("gene", gene_name)))
+
+    # Calculate average proteins for each proportion
+    dynamic_data <- dynamic_data %>%
+      group_by(fop) %>%  
+      summarize(avg_protein = mean(protein), .groups = "drop") %>%
+      mutate(trna_count = unique(dynamic_data$trna_count))  # Re-add group column
+  
+  return(dynamic_data)
+}
+
+# Function to process data for a given charge and ribo_speed with 2 decimal places
+process_dynamic_data_2decimal <- function(charge_val, ribo_speed, trna_count, pref_val) {
+  dynamic_output_dir <- sprintf("../data/simulation/phage/revised_dynamic_pref%.1f_charge%.2f_ribospeed%.2f", pref_val, charge_val, ribo_speed)
+  
+  # Generate file paths
+  seeds <- 1:3
+  file_paths <- expand.grid(seed = seeds, fop = fops, pref_val = pref_val, ribo_speed = ribo_speed, trna_count = trna_count) %>%
+    mutate(output_dir = dynamic_output_dir) %>%
+    mutate(file_name = sprintf("trna_phage_pref%.1f_%d_fop%.1f_ribospeed%.2f_trna%d.tsv", pref_val, seed, fop, ribo_speed, trna_count)) %>%
+    mutate(full_path = file.path(output_dir, file_name))
+  
+  # Load all simulations
+  dynamic_data <- load_sim(file_paths$full_path)
+  
+  # Add fop and trna_count columns and filter to include only the specified gene and max time
+  dynamic_data <- dynamic_data %>%
+    mutate(
+      fop = as.numeric(str_extract(file, "(?<=fop)[0-9]+\\.[0-9]")),
+      trna_count = trna_count
+    ) %>%
+    filter(time == max_time, str_detect(pinetree, paste("gene", gene_name)))
+
+    # Calculate average proteins for each proportion
+    dynamic_data <- dynamic_data %>%
+      group_by(fop) %>%  
+      summarize(avg_protein = mean(protein), .groups = "drop") %>%
+      mutate(trna_count = unique(dynamic_data$trna_count))  # Re-add group column
+  
+  return(dynamic_data)
+}
+
+# Process data for all three sets of data for pref_val = 0.5
+pref5_data1 <- process_dynamic_data_2decimal(0.25, 0.75, 100000, 0.5)
+pref5_data2 <- process_dynamic_data_1decimal(2.5, 7.5, 10000, 0.5)
+pref5_data3 <- process_dynamic_data_1decimal(25.0, 75.0, 1000, 0.5)
+
+# Combine data for pref_val = 0.5
+pref5_combined_data <- bind_rows(pref5_data1, pref5_data2, pref5_data3)
+
+# Process data for all three sets of data for pref_val = 0.7
+pref7_data1 <- process_dynamic_data_2decimal(0.25, 0.75, 100000, 0.7)
+pref7_data2 <- process_dynamic_data_1decimal(2.5, 7.5, 10000, 0.7)
+pref7_data3 <- process_dynamic_data_1decimal(25.0, 75.0, 1000, 0.7)
+
+# Combine data for pref_val = 0.7
+pref7_combined_data <- bind_rows(pref7_data1, pref7_data2, pref7_data3)
+
+# Combine all data for plotting
+combined_data <- bind_rows(
+  pref5_combined_data %>% mutate(pref_val = 0.5),
+  pref7_combined_data %>% mutate(pref_val = 0.7)
+)
+```
+
+```{r}
+# Create the plot
+combined_plot <- ggplot(combined_data, aes(x = fop, y = avg_protein, color = factor(trna_count))) +
+  geom_point(shape = 16, size = 3) +
+  geom_line(size = 0.75) +
+  labs(x = expression(f[op]), y = sprintf("Gene %s Protein Abundance", gene_name), color = "tRNA Count") +
+  theme_bw(base_size = 12) +
+  scale_x_continuous(breaks = seq(0, 1.0, by = 0.25), labels = seq(0, 1.0, by = 0.25), trans = "reverse") +
+  scale_color_manual(values = cbPalette) +
+  facet_wrap(~ pref_val, labeller = labeller(pref_val = c(`0.5` = "Proportion of Preferred tRNAs = 0.5", `0.7` = "Proportion of Preferred tRNAs = 0.7")))
+
+if (SAVE_FIGS) {
+  save_plot(sprintf("fig/revised_fopXproteins_scaling_2prefs.pdf"), combined_plot, base_width = 12, base_height = 6)
+}
+```
