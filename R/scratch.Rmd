@@ -47,7 +47,7 @@ load_sim <- function(path) {
 #data <- load_sim("data/simulation/phage/old_phage_wildtype.tsv")
 base_dir <- "../data/simulation/revised_weighted_opt1.0_nonopt0.22/"
 seeds <- c(70, 38, 79, 4, 80, 84, 27, 33, 7, 51)
-weighted_data_07 <- NULL
+w_data <- NULL
 for (seed in seeds) {
   seed_data <- NULL
     for (fop in c(0.1, 0.7)) {
@@ -60,15 +60,22 @@ for (seed in seeds) {
         seed_data <- rbind(seed_data, tmp)
       }
     seed_data <- seed_data %>% mutate(seed = seed)
-    
-  }
+    if (is.null(w_data)) {
+        w_data <- seed_data
+      }
+      else {
+        w_data <- rbind(w_data, seed_data)
+    }
+    }
+}
 ```
 
 ```{r}
-weighted_data_07_ave <- weighted_data_07 %>% 
-  group_by(species, time) %>% 
+w_data <- w_data %>% 
+  group_by(species, time, fop) %>% 
   summarize(protein = mean(protein)) %>%
   mutate(type = "static")
+w_data
 ```
 
 
@@ -76,33 +83,50 @@ weighted_data_07_ave <- weighted_data_07 %>%
 #data <- load_sim("data/simulation/phage/old_phage_wildtype.tsv")
 base_dir <- "../data/simulation/revised_dynamic_pref0.7_charge0.5_ribospeed1.5/"
 seeds <- c(70, 38, 79, 4, 80, 84, 27, 33, 7, 51)
-dynamic_data_07 <- NULL
+d_data <- NULL
 for (seed in seeds) {
-  tmp <- load_sim(paste0(base_dir,"trna_phage_pref0.7_",seed,"_fop0.7_ribospeed1.5_trna50000.tsv"))
-  tmp <- tmp %>%mutate(seed = seed)
-  if (is.null(dynamic_data_07)) {
-    dynamic_data_07 <- tmp
-  }
-else {
-    dynamic_data_07 <- rbind(dynamic_data_07, tmp)
-  }
+  seed_data <- NULL
+    for (fop in c(0.1, 0.7)) {
+      tmp <- load_sim(paste0(base_dir,"trna_phage_pref0.7_",seed,"_fop",fop,"_ribospeed1.5_trna50000.tsv"))
+      tmp <- tmp %>%mutate(fop = fop)
+      if (is.null(seed_data)) {
+        seed_data <- tmp
+      }
+      else {
+        seed_data <- rbind(seed_data, tmp)
+      }
+    seed_data <- seed_data %>% mutate(seed = seed)
+    if (is.null(d_data)) {
+        d_data <- seed_data
+      }
+      else {
+        d_data <- rbind(d_data, seed_data)
+    }
+    }
 }
 ```
 
 ```{r}
-dynamic_data_07_ave <- dynamic_data_07 %>% 
-  group_by(species, time) %>% 
+d_data <- d_data %>% 
+  group_by(species, time, fop) %>% 
   summarize(protein = mean(protein)) %>%
   mutate(type = "dynamic")
 ```
 
 ```{r}
-all <- rbind(weighted_data_07_ave, dynamic_data_07_ave)
+all <- rbind(d_data, w_data)
 ```
 
 ```{r}
 ggplot(all%>%filter(species == "bound_ribosome"), aes(x = time, y = protein, color = type)) +
+  facet_wrap(~fop) +
   geom_line()
+```
+
+```{r}
+ggplot(all%>%filter(species == "bound_ribosome", type=="dynamic"), aes(x = time, y = protein, color = as.factor(fop))) +
+  geom_line() +
+  scale_y_continuous(trans="log10")
 ```
 
 
