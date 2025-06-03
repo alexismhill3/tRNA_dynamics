@@ -50,6 +50,7 @@ OPT_CODONS_E_COLI = {'A': ['GCT'],
                      'Y': ['TAC'],
                      'V': ['GTT', 'GTA']}
 
+OPT_CODONS_E_COLI_LIST = ['GCT', 'CGT', 'CGC', 'AAC', 'GAC', 'TGC', 'CAG', 'GAA', 'GGT', 'GGC', 'CAC', 'ATC', 'CTG', 'TTC', 'CCG', 'TCT', 'TCC', 'ACT', 'ACC', 'TAC', 'GTT', 'GTA']
 
 def get_promoter_interactions(name):
     '''
@@ -127,7 +128,7 @@ def compute_cds_weights(record, feature, opt_weight, nonopt_weight, weights):
     nuc_seq = feature.location.extract(record).seq
     # Extract translated amino acid sequence
     aa_seq = feature.qualifiers["translation"][0]
-    
+
     # Iterate over nucleotide sequence
     for index, nuc in enumerate(nuc_seq):
         # Calculate amino acid index (Divide nucleotide index by 3 since an amino acid is 3 nucleotides aka 1 codon)
@@ -140,12 +141,21 @@ def compute_cds_weights(record, feature, opt_weight, nonopt_weight, weights):
         genome_index = feature.location.start + index
 
         # Check if amino acid seq is long enough to have an amino acid at the current index
+        val = None
         if aa_index < len(aa_seq):
             # Check if amino acid at current index has optimal codons
             if aa_seq[aa_index] in OPT_CODONS_E_COLI and codon in OPT_CODONS_E_COLI[aa_seq[aa_index]]:
                 weights[genome_index] = opt_weight
             else:
                 weights[genome_index] = nonopt_weight
+            if feature.qualifiers["product"][0] == "major head protein":
+                if codon in OPT_CODONS_E_COLI_LIST:
+                    weights[genome_index] = opt_weight
+                else:
+                    weights[genome_index] = nonopt_weight
+
+    #print(feature.qualifiers["product"])
+    #print(weights[feature.location.start:feature.location.start+len(nuc_seq)])
 
     return weights
 
@@ -199,9 +209,9 @@ def randomize_codons(record, feature, fop):
     return randomized_seq
 
 
-def main(fop, opt_weight, nonopt_weight, seed_val):
+def main(fop, opt_weight, nonopt_weight, seed_val, ribo_speed):
     sim = pt.Model(cell_volume=CELL_VOLUME)
-    Entrez.email = "kelly.to@utexas.edu"
+    Entrez.email = "alexis.hill@utexas.edu"
 
     # Download T7 wild-type genbank records
     for attempt in range(20):
@@ -274,7 +284,10 @@ def main(fop, opt_weight, nonopt_weight, seed_val):
             # Construct CDS parameters for this gene
             phage.add_gene(name=name, start=start, stop=stop,
                            rbs_start=start - 30, rbs_stop=start, rbs_strength=1e7)
+            #print(feature)
+
         if feature.type == "CDS":
+            #print(feature)
             weights = compute_cds_weights(record, feature, opt_weight, nonopt_weight, weights)
 
     mask_interactions = ["rnapol-1", "rnapol-3.5",
@@ -293,7 +306,7 @@ def main(fop, opt_weight, nonopt_weight, seed_val):
     sim.add_polymerase("ecolipol-2", 35, 45, 0)
     sim.add_polymerase("ecolipol-2-p", 35, 45, 0)
 
-    sim.add_ribosome(30, 30, 0)
+    sim.add_ribosome(30, ribo_speed, 0)
 
     sim.add_species("bound_ribosome", 10000)
 
@@ -342,10 +355,11 @@ def main(fop, opt_weight, nonopt_weight, seed_val):
     sim.seed(seed_val)
 
     # generate a unique filename based on the charge
-    output_dir = f"data/simulation/revised_weighted_opt{opt_weight}_nonopt{nonopt_weight}"
+    output_dir = f"../../../../data/simulation/revised_weighted_opt{opt_weight}_nonopt{nonopt_weight}"
+    # output_dir = f"data/simulation/phage/revised_weighted_opt{opt_weight}_nonopt{nonopt_weight}"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    output_filename = os.path.join(output_dir, f"revised_weighted_opt{opt_weight}_nonopt{nonopt_weight}_{seed_val}_fop{fop}.tsv")
+    output_filename = os.path.join(output_dir, f"weighted_opt{opt_weight}_nonopt{nonopt_weight}_{seed_val}_fop{fop}.tsv")
 
     print("Starting simulation...")
     try:
@@ -354,6 +368,7 @@ def main(fop, opt_weight, nonopt_weight, seed_val):
         print("Simulation completed.")
     except Exception as e:
         print(f"Simulation failed: {e}")
+
 
 
 if __name__ == "__main__":
@@ -366,5 +381,6 @@ if __name__ == "__main__":
     nonopt_weight = float(sys.argv[3])
     # seed value
     seed_val = int(sys.argv[4])
+    ribo_speed = float(sys.argv[5])
 
-    main(fop, opt_weight, nonopt_weight, seed_val)
+    main(fop, opt_weight, nonopt_weight, seed_val, ribo_speed)

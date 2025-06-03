@@ -1,18 +1,16 @@
 ---
-title: "R Notebook"
+title: "two-codon analysis"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+ Makes all plots associated with the numerical analysis of the two-codon system (main figures 2 and 3)
 
 ```{r}
 library(tidyverse)
 ```
 
 ```{r}
-two_codon_numeric <- read_csv("df_05_055_07_09.csv")
+two_codon_numeric <- read_csv("../mathematical_analysis/two_codon_pref_trna_05_055_07_09_speed_0.02.csv")
 ```
 
 ```{r}
@@ -41,7 +39,7 @@ p1
 ```
 
 ```{r}
-fop_max <- read_csv("fop_max_15_points.csv") 
+fop_max <- read_csv("../mathematical_analysis/fop_max_15_points_speed_0.02.csv") 
 ```
 
 ```{r}
@@ -49,7 +47,7 @@ colors <- c('#56c88f', '#2ea8a0', '#12809b', '#105693')
 colors <- sequential_hcl(5, "grays", rev = TRUE)[2:5]
 
 p2 <- fop_max %>%
-  filter(kch > 0.1, ratio < 0.99, fopt > 0) %>%
+  filter(kch > 0.025, ratio < 0.99, fopt > 0) %>%
   arrange(desc(ratio)) %>%
   ggplot(aes(x=kch, y=fopt, color=as.factor(ratio))) +
   geom_hline(aes(yintercept=0.5), linewidth=0.8, color=colors[1], alpha=0.6) +
@@ -73,7 +71,7 @@ p2
 
 ```{r}
 cowplot::plot_grid(p1, p2, nrow = 2, align = "v", axis="lr", labels=c("A", "B"))
-ggsave("fig/numeric_protein_expresion.pdf", width = 6, height = 4.5)
+ggsave("fig/numeric_protein_expression.pdf", width = 6, height = 4.5)
 ```
 
 ```{r}
@@ -93,7 +91,7 @@ trna_plot <- trna_ss_07 %>%
                      breaks = c(0, 0.25, 0.5, 0.75, 1),
                      labels = c("0", "0.25", "0.5", "0.75", "1")) +
   scale_y_continuous(name="Amount charged",
-                     limits=c(0, 1750)) +
+                     limits=c(100, 1750)) +
   #geom_hline(yintercept=1750, alpha=0.3, linewidth=0.5) +
   guides(color = guide_legend(reverse = TRUE)) +
   theme_bw() +
@@ -101,11 +99,11 @@ trna_plot <- trna_ss_07 %>%
 
 #legend <- get_legend(p3)
 trna_plot
-ggsave("fig/numeric_charged_trna.pdf", width=7, height=3)
+ggsave("fig/numeric_model_charged_trna.pdf", width=7, height=3)
 ```
 
 ```{r}
-tc_deltas <- read_csv("df_07_tc_deltas.csv")
+tc_deltas <- read_csv("../mathematical_analysis/df_07_tc_deltas.csv")
 ```
 
 ```{r}
@@ -132,16 +130,10 @@ p5
 #ggsave("fig/deltas_temp.png", width = 8, height = 4)
 ```
 
-```{r}
-#cowplot::plot_grid(top, p5, ncol = 1, labels = c("", "C"))
-#ggsave("fig/tc_deltas.pdf", width = 6, height = 4)
-```
-
 Parameter scaling analysis
 
 ```{r}
-trna_scaling <- read_csv("parameter_scaling_trna_kspeed.csv")
-ribo_scaling <- read_csv("parameter_scaling_ribosome_kbing.csv")
+trna_scaling <- read_csv("../mathematical_analysis/parameter_scaling_trna_kspeed.csv")
 ```
 
 ```{r}
@@ -210,29 +202,7 @@ ggsave("fig/numeric_data_collapse.pdf", width = 6, height = 4)
 Verify that numeric solutions are consistent with simulation
 
 ```{r}
-# dateframe contains simulated data and numeric solutions for an identical system
-df_verify = read_csv("verify_numeric.csv")
-```
-
-```{r}
-ggplot() +
-  geom_line(data=df_verify%>%filter(type=="numeric", fopt>0.1), 
-            aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), linewidth=1.5, alpha=0.8) +
-  geom_point(data=df_verify%>%filter(type=="simulation", fopt>0.1), 
-             aes(x=fopt, y=protein_expr_rate, color=as.factor(kch)), size=2) +
-  scale_x_continuous(name=expression(f[op])) +
-  scale_y_continuous(name="Protein expression rate") +
-  scale_color_discrete_sequential(palette="Blues3", nmax=5, order=2:5, name=expression(k[charge])) +
-  #geom_vline(data=vlines, aes(xintercept=val), alpha=0.3, linewidth=0.5) +
-  theme_bw() +
-  theme(text = element_text(size = 12),
-        panel.grid = element_blank()) +
-  guides(color = guide_legend(reverse = TRUE))
-ggsave("fig/verify_numeric.pdf", width = 6, height = 4)
-```
-
-```{r}
-df_verify_ss = read_csv("verify_numeric_sim_ss.csv")
+df_verify_ss = read_csv("../mathematical_analysis/verify_numeric_sim_ss.csv")
 ```
 
 ```{r}

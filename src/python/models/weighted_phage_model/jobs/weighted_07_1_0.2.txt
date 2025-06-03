@@ -1,0 +1,10 @@
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 70
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 38
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 79
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 4
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 80
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 84
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 27
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 33
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 7
+python3 revised_weighted_phage_model_dev.py 0.7 1 0.2 51
