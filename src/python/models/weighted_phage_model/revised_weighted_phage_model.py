@@ -148,7 +148,7 @@ def compute_cds_weights(record, feature, opt_weight, nonopt_weight, weights):
                 weights[genome_index] = opt_weight
             else:
                 weights[genome_index] = nonopt_weight
-            if feature.qualifiers["product"][0] == "major head protein":
+            if feature.qualifiers["product"][0] == "major capsid protein":
                 if codon in OPT_CODONS_E_COLI_LIST:
                     weights[genome_index] = opt_weight
                 else:
@@ -214,18 +214,20 @@ def main(fop, opt_weight, nonopt_weight, seed_val, ribo_speed):
     Entrez.email = "alexis.hill@utexas.edu"
 
     # Download T7 wild-type genbank records
-    for attempt in range(20):
-        try:
-            handle = Entrez.efetch(db="nuccore", id=["NC_001604"], rettype="gb", retmode="text")
-            record = SeqIO.read(handle, "genbank")
-            break
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                time.sleep(2 ** attempt)  # Exponential backoff
-                print(f"Rate limit exceeded. Retrying...")
-            else:
-                print(f"Failed to fetch GenBank record: {e}")
-                break
+    #for attempt in range(20):
+    #    try:
+    #        handle = Entrez.efetch(db="nuccore", id=["NC_001604"], rettype="gb", retmode="text")
+    #        record = SeqIO.read(handle, "genbank")
+    #        break
+    #    except urllib.error.HTTPError as e:
+    #        if e.code == 429:
+    #            time.sleep(2 ** attempt)  # Exponential backoff
+    #            print(f"Rate limit exceeded. Retrying...")
+    #        else:
+    #            print(f"Failed to fetch GenBank record: {e}")
+    #            break
+    
+    record = SeqIO.read("T7_genome.gb", "genbank")
 
     # Extract the sequence of gene 10A
     # gene_10A_sequence = None
