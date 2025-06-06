@@ -177,7 +177,7 @@ palette <- c("#0090C1", "#40476D", "#FCAB10" )
 
 p_scale_trna <- trna_scaling %>%
   filter(kspeed_factor == 10) %>%
-  filter(fopt > 0.1) %>%
+  filter(fopt > 0.0) %>%
   mutate(total_trna = Tt1 + Tt2) %>%
   ggplot(aes(x=fopt, y=protein_expr_rate, color=as.factor(total_trna))) +
   #geom_jitter(position = position_jitter(width = 0.00625, height = 1), 
