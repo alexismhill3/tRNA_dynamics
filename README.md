@@ -38,4 +38,4 @@ python3 revised_weighted_phage_model.py <fop> <speed_op> <speed_non_op> <seed_va
 - `seed_val` seed to reproduce simulations
 - `ribo_speed` the baseline elongation rate for ribosomes in the simulation
 
-Finally, code to produce all figures in the manuscript is in `R`.
+Finally, code to produce all figures in the manuscript can be found in `R` folder.
