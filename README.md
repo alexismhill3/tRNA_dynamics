@@ -33,8 +33,8 @@ python3 revised_weighted_phage_model.py <fop> <speed_op> <speed_non_op> <seed_va
 ```
 
 - `fop` is the fraction of optimal codons in T7 gene 10A (should be a number from 0 to 1)
-- `speed_op` static codon speed weight associated with optimal codons
-- `speed_non_op` static codon speed weight associated with non-optimal codons
+- `speed_op` static codon speed associated with optimal codons
+- `speed_non_op` static codon speed associated with non-optimal codons
 - `seed_val` seed to reproduce simulations
 - `ribo_speed` the baseline elongation rate for ribosomes in the simulation
 
