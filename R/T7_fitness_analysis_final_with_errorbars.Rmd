@@ -39,10 +39,6 @@ fops<- c(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
 seeds <- c(70, 38, 79, 4, 80, 84, 27, 33, 7, 51)
 
 ########## Weighted Model
-#opt_val <- 1.0 # OG
-#nonopt_val <- 0.25 # OG
-#opt <- 12
-#nonopt <- 5.2
 opt <- 7
 nonopt <- 3
 weighted_output_dir <- sprintf("../data/simulation/revised_weighted_opt%.1f_nonopt%.1f", opt, nonopt)
@@ -65,6 +61,7 @@ for (seed in seeds) {
       else {
         seed_data <- rbind(seed_data, tmp)
       }
+    }  
     seed_data <- seed_data %>% mutate(seed = seed)
     if (is.null(w_data)) {
         w_data <- seed_data
@@ -72,7 +69,6 @@ for (seed in seeds) {
     else {
       w_data <- rbind(w_data, seed_data)
     }
-  }
 }
 ```
 
@@ -184,6 +180,7 @@ combined_data <- combined_data %>%
   filter(fop <= 0.7) %>%
   mutate(type = "Simulation")
 ```
+
 
 ```{r}
 n <- 10 # number of simulation replicates
@@ -336,31 +333,29 @@ ggsave("fig/fitness_revised.pdf", width = 8, height = 3.5)
 ```{r}
 # tRNA abundances as a function of time for fop=0.7
 
-setwd("/stor/scratch/Wilke/amh7958/phage_simulation_kelly")
-
-dir <- "data/simulation/phage/copy_revised_dynamic_pref0.7_charge0.5_ribospeed1.5/"
+dir <- "../data/simulation/revised_dynamic_pref0.7_charge0.5_ribospeed1.5_timestep_5/"
 fops <- c(0.7, 0.1)
 
-dynamic_all_times <- NULL
+dynamic_timecourse <- NULL
 for (fop in fops) {
   tmp <- read_tsv(paste0(dir, "trna_phage_pref0.7_1", "_fop", fop, "_ribospeed1.5_trna50000.tsv"))
   tmp <- tmp %>% 
     mutate(time = round(time)) %>% 
     mutate(fop = fop)
-  if (is.null(dynamic_all_times)) {
-    dynamic_all_times <- tmp
+  if (is.null(dynamic_timecourse)) {
+    dynamic_timecourse <- tmp
   }
   else {
-    dynamic_all_times <- rbind(dynamic_all_times, tmp)
+    dynamic_timecourse <- rbind(dynamic_timecourse, tmp)
   }
 }
 ```
 
 ```{r}
 color <- "#0090C1"
-facet_labels <- c("0.1" = "Deoptimized", "0.7" = "WT")
+facet_labels <- c("0.1" = "Deoptimized", "0.7" = "Wild-type")
 
-dynamic_all_times %>%
+dynamic_timecourse %>%
   filter(species %in% c("pref_charged", "nonpref_charged")) %>%
   filter(fop %in% c(0.1, 0.7)) %>%
   mutate(fop = factor(fop, level=c(0.7, 0.1))) %>%

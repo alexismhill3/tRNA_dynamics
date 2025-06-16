@@ -208,7 +208,7 @@ plot_model_fitness <- ggplot(combined_data%>%
   theme(text = element_text(size=12))
 
 plot_model_fitness
-#ggsave("alexis_fig/10A_protein_simulation_only.pdf", width=7, height=4)
+ggsave("fig/10A_protein_static_100X_trna_skew.pdf", width=7, height=4)
 ```
 
 ```{r}
@@ -249,7 +249,7 @@ fitness_plot_model <- ggplot(combined_data_bull%>%filter(type=="Simulation")%>%m
                      trans="reverse",
                      name=expression(f[op]~"(gene 10A)")) +
   scale_y_continuous(name="Predicted fitness", 
-                     limits=c(0.7, 1.05)) +
+                     limits=c(0.65, 1.05)) +
   scale_color_manual(values = c("Weighted" = palette[1], "Dynamic" = palette[2]),
                      labels = c("Weighted" = "Static tRNA model", "Dynamic" = "Dynamic tRNA model"),
                      name="",
@@ -277,13 +277,13 @@ fitness_plot_experiment <- ggplot(combined_data_bull %>%
                 width=0.02,
                 alpha=0.5,
                 linewidth=linewidth) +
-  geom_point(size = 3, fill="grey55", color="white", shape=21) +
+  geom_point(size = 3, color="grey55") +
   # adjust theme and axis labels
   scale_x_continuous(trans="reverse",
                      limits=c(0.7, 0),
                      name=expression(f[op]~"(gene 10A)")) +
   scale_y_continuous(name="Measured fitness",
-                     limits=c(0.7, 1.05)) +
+                     limits=c(0.65, 1.05)) +
   theme_bw() +
   theme(text = element_text(size = 12),
         )
@@ -291,7 +291,7 @@ fitness_plot_experiment <- ggplot(combined_data_bull %>%
 
 ```{r}
 cowplot::plot_grid(fitness_plot_model, fitness_plot_experiment, labels=c("A", "B"))
-#ggsave("fig/fitness_revised.pdf", width = 8, height = 3.5)
+#ggsave("fig/fitness_revised_100X_codon_penalty.pdf", width = 8, height = 3.5)
 ```
 
 

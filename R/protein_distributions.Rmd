@@ -59,7 +59,7 @@ Read in data for WT static model
 
 ```{r}
 fop <- 0.7 # near WT fop
-# Final fitted weights are 12 and 5.2 for opt and non-opt codons, respectively
+# Final codon speeds are 7 and 3 for opt and non-opt codons, respectively
 
 labels <- read_csv("id_map.csv") %>% filter(!is.na(gene_number))
 load_sim <- function(path) {
@@ -72,11 +72,11 @@ load_sim <- function(path) {
     filter(!(pinetree %in% IGNORE_GENES), !is.na(gene_number))
 }
 
-base_dir <- "../data/simulation/revised_weighted_opt12.0_nonopt5.2/"
+base_dir <- "../data/simulation/revised_weighted_opt7.0_nonopt3.0/"
 seeds <- c(70, 38, 79, 4, 80, 84, 27, 33, 7, 51)
 weighted_data_07 <- NULL
 for (seed in seeds) {
-  tmp <- load_sim(paste0(base_dir,"weighted_opt12.0_nonopt5.2_",seed,"_fop",fop,".tsv"))
+  tmp <- load_sim(paste0(base_dir,"weighted_opt7.0_nonopt3.0_",seed,"_fop",fop,".tsv"))
   tmp <- tmp %>% filter(time == 1200) %>%mutate(seed = seed)
   if (is.null(weighted_data_07)) {
     weighted_data_07 <- tmp
