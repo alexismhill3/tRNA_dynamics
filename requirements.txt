@@ -1,3 +1,4 @@
 pandas>=1.3.5
 seaborn>=0.13.2
 sympy>=1.13.2
+pinetree>=0.4.1
